@@ -16,3 +16,5 @@ htmlcov/
 build/
 dist/
 *.log
+*.docx
+extract_docx.py
