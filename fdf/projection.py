@@ -47,10 +47,12 @@ def height_color(z: int, z_min: int, z_max: int) -> str:
 
 
 class Camera:
-    def __init__(self, angle: float = 30.0, z_scale: float = 1.0) -> None:
+    def __init__(self, angle: float = 0.0, z_scale: float = 1.0) -> None:
         self.angle = angle
         self.z_scale = z_scale
+        self.top_view = False
         self.scale = 1.0
+        self._fit_scale = 1.0
         self.offset_x = 0.0
         self.offset_y = 0.0
 
@@ -58,6 +60,9 @@ class Camera:
         theta = math.radians(self.angle)
         rotated_x = point.x * math.cos(theta) - point.y * math.sin(theta)
         rotated_y = point.x * math.sin(theta) + point.y * math.cos(theta)
+
+        if self.top_view:
+            return rotated_x, rotated_y
 
         x_offset = (rotated_x - rotated_y) * math.cos(math.radians(30.0))
         y_offset = (rotated_x + rotated_y) * math.sin(math.radians(30.0)) - point.z * self.z_scale
@@ -67,9 +72,24 @@ class Camera:
         x_value, y_value = self._project_raw(point)
         return x_value * self.scale + self.offset_x, y_value * self.scale + self.offset_y
 
+    def pan(self, dx: float, dy: float) -> None:
+        self.offset_x += dx
+        self.offset_y += dy
+
+    def zoom(self, factor: float, anchor_x: float, anchor_y: float) -> None:
+        if factor <= 0:
+            raise ValueError("zoom factor must be positive")
+
+        new_scale = min(max(self.scale * factor, self._fit_scale * 0.1), self._fit_scale * 10.0)
+        applied_factor = new_scale / self.scale
+        self.offset_x = anchor_x - (anchor_x - self.offset_x) * applied_factor
+        self.offset_y = anchor_y - (anchor_y - self.offset_y) * applied_factor
+        self.scale = new_scale
+
     def fit(self, map_data: Map, width: float, height: float) -> tuple[float, float, float]:
         if not map_data.points:
             self.scale = 1.0
+            self._fit_scale = self.scale
             self.offset_x = 0.0
             self.offset_y = 0.0
             return self.scale, self.offset_x, self.offset_y
@@ -83,6 +103,7 @@ class Camera:
         height_span = max(height_span, 1.0)
 
         self.scale = min(width / width_span, height / height_span) * 0.9
+        self._fit_scale = self.scale
         center_x = (min(xs) + max(xs)) / 2.0
         center_y = (min(ys) + max(ys)) / 2.0
         self.offset_x = width / 2.0 - center_x * self.scale

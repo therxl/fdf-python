@@ -8,6 +8,8 @@ from .model import Map, Point
 from .parser import parse_map
 from .projection import Camera, height_color, lerp_color
 
+ZOOM_FACTOR = 1.1
+
 
 class App:
     def __init__(self, map_data: Map | str, width: int = 800, height: int = 600) -> None:
@@ -16,9 +18,6 @@ class App:
         self.height = height
         self.camera = Camera()
         self.camera.fit(self.map, width, height)
-        self.z_scale = self.camera.z_scale
-        self.isometric = True
-        self.angle = self.camera.angle
 
     def _iter_edges(self) -> Iterable[tuple[Point, Point]]:
         for y, row in enumerate(self.map.points):
@@ -58,6 +57,32 @@ class App:
             self._draw_line(screen, start_pos, end_pos, start_color, end_color)
         pygame.display.flip()
 
+    def _handle_control(
+        self,
+        event: pygame.event.Event,
+        mouse_pos: tuple[int, int],
+    ) -> None:
+        if event.type == pygame.MOUSEWHEEL:
+            wheel_y = -event.y if getattr(event, "flipped", False) else event.y
+            if wheel_y:
+                self.camera.zoom(ZOOM_FACTOR**wheel_y, *mouse_pos)
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_EQUALS:
+                self.camera.z_scale += 0.5
+                self.camera.fit(self.map, self.width, self.height)
+            elif event.key == pygame.K_MINUS:
+                self.camera.z_scale = max(0.1, self.camera.z_scale - 0.5)
+                self.camera.fit(self.map, self.width, self.height)
+            elif event.key == pygame.K_LEFT:
+                self.camera.angle -= 5.0
+                self.camera.fit(self.map, self.width, self.height)
+            elif event.key == pygame.K_RIGHT:
+                self.camera.angle += 5.0
+                self.camera.fit(self.map, self.width, self.height)
+            elif event.key == pygame.K_v:
+                self.camera.top_view = not self.camera.top_view
+                self.camera.fit(self.map, self.width, self.height)
+
     def run(self) -> None:
         pygame.init()
         pygame.display.set_caption("FdF")
@@ -73,24 +98,10 @@ class App:
                 elif event.type == pygame.VIDEORESIZE:
                     self.width, self.height = event.w, event.h
                     self.camera.fit(self.map, self.width, self.height)
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        running = False
-                    elif event.key == pygame.K_EQUALS:
-                        self.camera.z_scale += 0.5
-                        self.camera.fit(self.map, self.width, self.height)
-                    elif event.key == pygame.K_MINUS:
-                        self.camera.z_scale = max(0.1, self.camera.z_scale - 0.5)
-                        self.camera.fit(self.map, self.width, self.height)
-                    elif event.key == pygame.K_LEFT:
-                        self.camera.angle -= 5.0
-                        self.camera.fit(self.map, self.width, self.height)
-                    elif event.key == pygame.K_RIGHT:
-                        self.camera.angle += 5.0
-                        self.camera.fit(self.map, self.width, self.height)
-                    elif event.key == pygame.K_v:
-                        self.camera.angle = 0.0 if self.camera.angle != 0.0 else 30.0
-                        self.camera.fit(self.map, self.width, self.height)
+                elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    running = False
+                else:
+                    self._handle_control(event, pygame.mouse.get_pos())
 
             self.draw(screen)
             clock.tick(60)
