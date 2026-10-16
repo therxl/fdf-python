@@ -14,6 +14,13 @@ def test_projection_height_is_negative() -> None:
     assert projected[1] < 0
 
 
+def test_vertical_rotation_rotates_map_in_xy_plane() -> None:
+    camera = Camera(angle=90.0, z_scale=1.0)
+    projected = camera.project(Point(1, 0, 0))
+    assert projected[0] != 0.0
+    assert projected[1] != 0.0
+
+
 def test_camera_fit_keeps_points_in_window() -> None:
     data = Map([
         [Point(0, 0, 0), Point(1, 0, 0), Point(2, 0, 0)],

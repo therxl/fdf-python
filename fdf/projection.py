@@ -56,8 +56,11 @@ class Camera:
 
     def _project_raw(self, point: Point) -> tuple[float, float]:
         theta = math.radians(self.angle)
-        x_offset = (point.x - point.y) * math.cos(theta)
-        y_offset = (point.x + point.y) * math.sin(theta) - point.z * self.z_scale
+        rotated_x = point.x * math.cos(theta) - point.y * math.sin(theta)
+        rotated_y = point.x * math.sin(theta) + point.y * math.cos(theta)
+
+        x_offset = (rotated_x - rotated_y) * math.cos(math.radians(30.0))
+        y_offset = (rotated_x + rotated_y) * math.sin(math.radians(30.0)) - point.z * self.z_scale
         return x_offset, y_offset
 
     def project(self, point: Point) -> tuple[float, float]:

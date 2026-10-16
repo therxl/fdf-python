@@ -82,6 +82,12 @@ class App:
                     elif event.key == pygame.K_MINUS:
                         self.camera.z_scale = max(0.1, self.camera.z_scale - 0.5)
                         self.camera.fit(self.map, self.width, self.height)
+                    elif event.key == pygame.K_LEFT:
+                        self.camera.angle -= 5.0
+                        self.camera.fit(self.map, self.width, self.height)
+                    elif event.key == pygame.K_RIGHT:
+                        self.camera.angle += 5.0
+                        self.camera.fit(self.map, self.width, self.height)
                     elif event.key == pygame.K_v:
                         self.camera.angle = 0.0 if self.camera.angle != 0.0 else 30.0
                         self.camera.fit(self.map, self.width, self.height)
