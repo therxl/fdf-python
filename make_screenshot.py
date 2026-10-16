@@ -1,25 +1,34 @@
-import struct
-import zlib
+from __future__ import annotations
 
-width, height = 800, 500
-pixels = bytearray()
-for y in range(height):
-    pixels.append(0)
-    for x in range(width):
-        r = int(40 + (x / width) * 120)
-        g = int(50 + (y / height) * 150)
-        b = int(100 + (x / width) * 100)
-        pixels.extend((r, g, b))
+import os
+from pathlib import Path
+
+import pygame
+
+from fdf.app import App
+
+os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 
 
-def chunk(tag: bytes, data: bytes) -> bytes:
-    return struct.pack('>I', len(data)) + tag + data + struct.pack('>I', zlib.crc32(tag + data) & 0xFFFFFFFF)
+ROOT = Path(__file__).resolve().parent
+SCREENSHOT_SIZE = (800, 600)
+MAP_SCREENSHOTS = (
+    ("maps/elem.fdf", "docs/screenshot.png"),
+    ("maps/cigarette_pack.fdf", "docs/cigarette_pack.png"),
+)
 
-raw = b''.join(b'\x00' + bytes(pixels[y * width * 3:(y + 1) * width * 3]) for y in range(height))
-img = b'\x89PNG\r\n\x1a\n'
-img += chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0))
-img += chunk(b'IDAT', zlib.compress(raw, 9))
-img += chunk(b'IEND', b'')
-with open(r'c:\Users\Администратор\Desktop\лаба1\docs\screenshot.png', 'wb') as f:
-    f.write(img)
-print('created screenshot.png')
+
+def main() -> None:
+    pygame.init()
+    surface = pygame.display.set_mode(SCREENSHOT_SIZE)
+    for map_path, image_path in MAP_SCREENSHOTS:
+        App(str(ROOT / map_path), *SCREENSHOT_SIZE).draw(surface)
+        output_path = ROOT / image_path
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        pygame.image.save(surface, output_path)
+        print(f"created {output_path.relative_to(ROOT)}")
+    pygame.quit()
+
+
+if __name__ == "__main__":
+    main()
